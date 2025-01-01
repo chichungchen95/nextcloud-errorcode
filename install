@@ -1,63 +1,64 @@
-1.安裝PHP擴充跟模組和資料庫
-apt -y install  mariadb-server libapache2-mod-php redis-server tar unzip git php8.1-{mysql,gd,mbstring,curl,zip,xml,fpm,intl,gmp,bcmath,exif,imagick,bz2} 
+目前的 PHP 的記憶體限制設定低於建議值 512MB。
+nano /etc/php/8.1/apache2/php.ini
+[CTRL+w] <- 搜索 memory_limit
+128M改成512M
+[CTRL+o][ENTER][ENTER]
+保存完畢後 
+systemctl restart apache2
 
-2.設置數據庫 用戶名後面的localhost可以自行判斷是否改為其他(localhost也可以運行)
-mysql -u root -p
-CREATE DATABASE 數據庫名稱;
-CREATE USER '帳戶名稱'@'localhost' IDENTIFIED BY '密碼';
-GRANT ALL PRIVILEGES ON 數據庫名稱.* TO  '帳戶名稱'@'localhost' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-exit;
- 
-3.下載nextcloud檔案
-cd /var/www/
-rm html/*
+您的資料目錄和檔案看來可以被公開存取，這表示 .htaccess 設定檔並未生效，我們強烈建議您設定網頁伺服器，拒絕公開存取資料目錄，或者將您的資料目錄移出網頁伺服器根目錄。
+nano /etc/apache2/apache2.conf
+加入個html
+/www/html
+None改成ALL
+cp /var/www/html/.htaccess data <-這裡超白癡 忘記自己刪除到檔案
+
+
+您的網頁伺服器設定不正確，因此無法解析 “/.well-known/carddav” ，請至說明文件瞭解更多資訊。
+a2enmod rewrite
+
+.htaccess 和 .user 的完整性檢查失敗.ini
+解決辦法就是修補檔案
 wget https://download.nextcloud.com/server/releases/nextcloud-26.0.5.zip
 unzip nextcloud-26.0.5.zip
-mv nextcloud/* html
+mv nextcloud/config.php html
+mv nextcloud/index.php html
+mv nextcloud/.user.ini html
+mv nextcloud/.htaccess html
 rm -r nextcloud nextcloud-26.0.5.zip
+進入網站 按下重新掃描
 
-4.導入其他存儲硬碟(沒有需求，可以跳過)
-fdisk -l <-查詢硬碟路徑
-注意! 由於我的硬碟是新的 未初始化，所以這裡沒需求也可以跳過
-
-mkfs.ext4 /dev/sdb <- /dev/sdb這裡可以改成自己的硬碟路徑
-
-blkid /dev/sdb
-nano /etc/fstab
-UUID= uuid填寫這裡  /var/www/html/data ext4 defaults 0 2
-mount -a
-reboot
-
-5.給予權限
-chown -R www-data:www-data /var/www/html
-chmod -R 755 /var/www/html
-
-6.啟動套件
-systemctl start apache2 && systemctl enable apache2
-systemctl start php8.1-fpm && systemctl enable php8.1-fpm
-
-7.進入後台網頁
-Chrome輸入 http://網頁ip/nextcloud  <-假如使用內網登入 之後用網域就需要去
-/var/www/html/config/config.php修改
-
-設定帳號名稱
-數據庫帳戶名稱
-
-設定存放位置/var/www/html/data(預設)
-
-數據庫帳戶密碼
-數據庫名稱
-數據庫IP localhost(預設)
-
-8.等待安裝+配置基本設定
-等太久或是網頁卡住可以試試重新整理
+PHP configuration option output_buffering must be disabled
 nano /etc/php/8.1/apache2/php.ini
-memory_limit = 512M
-upload_max_filesize = 16G <-上傳大小
-opcache.enable = 1
-opcache.interned_strings_buffer = 8
-opcache.max_accelerated_files = 10000
-opcache.memory_consumption = 128
-opcache.save_comments = 1
-opcache.revalidate_freq = 1
+加個;
+; output_buffering = 4096
+systemctl restart apache2
+
+CRON
+crontab -u www-data -e
+*/5  *  *  *  * php -f /var/www/html/cron.php
+
+你並未設定手機國際冠碼。設定後使用者在個人檔案設定手機號碼時不必再輸入國際冠碼。若要這樣做，請新增「default_phone_region」於設定檔，允許的國家及地區請參閱 ISO 3166-1 code ↗ 清單。
+/var/www/html/config/config.php
+新增  'default_phone_region' => ''TW',
+
+系統安裝的 php-imagick 不支援 SVG，為了更好的相容性，建議安裝它。
+apt install libmagickcore-6.q16-6-extra
+
+您沒有設定記憶體快取，如果可以，請設定 memcache 來提升效能。更多資訊請查閱文件 ↗。
+apt install php8.1-apcu
+nano /var/www/html/config/config.php
+加入下面這條
+'memcache.local' => '\OC\Memcache\APCu',
+
+crontab -u www-data -e
+添加
+*/5 * * * * sudo -u www-data php --define apc.enable_cli=1  /var/www/nextcloud/occ  maintenance:repair
+
+HTTP "Strict-Transport-Security" 標頭並未被設定持續至少15552000秒。為了提高安全性，我們在安全建議 ↗中有詳述並建議啟用 HSTS。
+a2enmod headers 
+nano /etc/apache2/sites-enable/*.conf
+添加
+Header always set Strict-Transport-Security "max-age=63072000; includeSubdomains; preload"
+
+gui windows 不見 請關閉 cloudflare Rocket Loader™
