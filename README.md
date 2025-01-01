@@ -1,3 +1,40 @@
+在Ubuntu安裝Nextcloud
+前行提要
+本次使用:
+網頁伺服器為apache2
+
+1.安裝PHP擴充跟模組和資料庫
+LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+apt -y install libapache2-mod-php tar unzip git php8.3 php8.3-{mysql,gd,mbstring,curl,zip,xml,fpm,intl,gmp,bcmath,exif,imagick,bz2} 
+
+2.設置數據庫 用戶名後面的localhost可以自行判斷是否改為其他(localhost也可以運行)
+mysql -u root -p
+CREATE DATABASE 數據庫名稱;
+CREATE USER '帳戶名稱'@'localhost' IDENTIFIED BY '密碼';
+GRANT ALL PRIVILEGES ON 數據庫名稱.* TO  '帳戶名稱'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+exit;
+ 
+3.下載nextcloud檔案
+cd /var/www/
+rm -rf html
+mkdir nextcloud
+cd nextcloud
+wget https://download.nextcloud.com/server/releases/nextcloud-29.0.8.zip
+unzip nextcloud-29.0.8.zip 
+rm nextcloud-29.0.8.zip
+mv nextcloud/* .
+rm -r nextcloud
+
+4.導入其他存儲硬碟(沒有需求，可以跳過)
+fdisk -l <-查詢硬碟路徑
+注意! 由於我的硬碟是新的 未初始化，所以這裡沒需求也可以跳過
+
+mkfs.ext4 /dev/sdb <- /dev/sdb這裡可以改成自己的硬碟路徑
+
+blkid /dev/sdb
 nano /etc/fstab
 UUID= uuid填寫這裡  /var/www/html/data ext4 defaults 0 2
 mount -a
@@ -37,4 +74,4 @@ opcache.save_comments = 1
 opcache.revalidate_freq = 1
 
 
-9.安裝完成 如有在管理頁面看到報錯可以查看question文件
+9.安裝完成 查看錯誤問題文件
