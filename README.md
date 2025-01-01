@@ -22,9 +22,9 @@ cd /var/www/
 rm -rf html
 mkdir nextcloud
 cd nextcloud
-wget https://download.nextcloud.com/server/releases/nextcloud-29.0.8.zip
-unzip nextcloud-29.0.8.zip 
-rm nextcloud-29.0.8.zip
+wget https://download.nextcloud.com/server/releases/nextcloud-30.0.4.zip
+unzip nextcloud-30.0.4.zip 
+rm nextcloud-30.0.4.zip
 mv nextcloud/* .
 rm -r nextcloud
 
@@ -75,3 +75,5 @@ opcache.revalidate_freq = 1
 
 
 9.安裝完成 查看錯誤問題文件
+
+(以上為參考，如運行後出現問題與本人無關)
