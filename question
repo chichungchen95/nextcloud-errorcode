@@ -60,3 +60,5 @@ a2enmod headers
 nano /etc/apache2/sites-enable/*.conf
 添加
 Header always set Strict-Transport-Security "max-age=63072000; includeSubdomains; preload"
+
+gui windows 不見 請關閉 cloudflare Rocket Loader™
